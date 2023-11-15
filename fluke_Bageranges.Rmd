@@ -1,0 +1,25 @@
+---
+title: "Summer Flounder B and age structure"
+author: "Sarah Gaichas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Objective
+
+Create a range of biomass and associated age structures for summer flounder based on the 2023 MT assessment. This will be used to parameterize a relationship between summer flounder population structure and expectation of catch given regs from the recreational demand model.
+
+## Approach
+
+Take the 2023 MT assessment input and output files as a starting point. Find max and min B relative to the reference point and most extreme age structures (all young, all old) from the assessment. Can we get a relationship (or eliminate unlikely combinations) of B/Bmsy and age structure that is realistic for this stock?
+
+## Range of B/Bmsy from assessment
+
+Mark Terciero provided the files from the 2023 MT assessment. They are in this repo in the `fluke2023MTfiles` folder:
+
+
+
