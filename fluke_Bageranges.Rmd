@@ -19,7 +19,43 @@ Take the 2023 MT assessment input and output files as a starting point. Find max
 
 ## Range of B/Bmsy from assessment
 
-Mark Terciero provided the files from the 2023 MT assessment. They are in this repo in the `fluke2023MTfiles` folder:
+Mark Terciero provided the files from the 2023 MT assessment. They are in this repo in the `fluke2023MTfiles` folder: https://github.com/sgaichas/MAFMCrecMeasures/tree/main/fluke2023MTfiles
+
+First, here in mac land we need to change filenames to have lowercase extensions. Done by hand.
+
+We want the following from the .rep file: 
+
++  Population Numbers at the Start of the Year 
++  Biomass Time Series
+
+This is findable in the .rdat file using Chris Legault and Liz Brook's ASAPplots functions:
+
+```{r}
+# try Legault's asapPlots functions to read rep/rdat
+
+devtools::install_github("cmlegault/ASAPplots", build_vignettes = TRUE)
+
+library(ASAPplots)
+
+asap.name <- "F2023_NEWSET_ESS_V1"    
+wd <- here::here("fluke2023MTfiles")
+
+#test from plotASAP.r lines 42-43
+rdat <- paste0(asap.name,".rdat")
+asap <- dget(paste0(wd,"/",rdat)) # modified from windows specific backslash
+
+# desired objects
+asap$SSB
+
+asap$exploitable.B
+
+asap$tot.jan1.B
+
+asap$N.age
+
+
+```
+
 
 
 
