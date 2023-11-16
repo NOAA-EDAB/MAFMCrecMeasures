@@ -33,7 +33,7 @@ This is findable in the .rdat file using Chris Legault and Liz Brook's ASAPplots
 ```{r}
 # try Legault's asapPlots functions to read rep/rdat
 
-devtools::install_github("cmlegault/ASAPplots", build_vignettes = TRUE)
+#devtools::install_github("cmlegault/ASAPplots", build_vignettes = TRUE)
 
 library(ASAPplots)
 
@@ -56,6 +56,78 @@ asap$N.age
 
 ```
 
+Add reference points from assessment: 
+
+Download from https://apps-nefsc.fisheries.noaa.gov/saw/sasi.php
+
+Search Criteria Used
+
++  Assessment Year:	2023
++  Species Name:	Summer flounder
++  Stock Area:	Summer flounder
++  Review Type:	Level 2 Expedited Review
++  Information Type:	All
+
+Table 2 of `Summer_flounder_MTA_2023_06_08_130636.678006.pdf` has reference points
+
+$SSB_{msy}$ in 2023 is 49561
+
+Show SSB from assessment relative to $SSB_{msy}$:
+
+```{r}
+
+SSBmsy <- 49561
+
+relSSB <- asap$SSB/SSBmsy
+
+years <- asap$parms$styr:asap$parms$endyr
+
+SSBdat <- data.frame(years = years,
+                     relSSB = relSSB,
+                     SSB = asap$SSB,
+                     explB = asap$exploitable.B,
+                     totB = asap$tot.jan1.B)
+
+ggplot2::ggplot(SSBdat, ggplot2::aes(x = years, y = relSSB)) +
+  ggplot2::geom_line() +
+  ggplot2::geom_hline(yintercept = 1.5) + 
+  ggplot2::geom_hline(yintercept = 1) + 
+  ggplot2::geom_hline(yintercept = 0.5) + 
+  ggplot2::theme_bw()
+```
+
+Lines represent three "bins" with B > Bmsy in the top bin, 0.5 Bmsy <B < B msy in the center and B < 0.5 Bmsy at the bottom.
+
+B has never been above 1.5 Bmsy in this time series. Will have to punt on that one or use max B.
 
 
+Summarize in each bin:
+```{r}
+SSBbins <- SSBdat |>
+  dplyr::mutate(bin = dplyr::case_when(relSSB > 1.5 ~ "high above target",
+                                dplyr::between(relSSB, 1.0,1.5) ~ "above target",
+                                dplyr::between(relSSB, 0.5,1.0) ~ "below target",
+                                relSSB < 0.5 ~ "overfished"))
+
+binsummary <- SSBbins |> 
+  dplyr::group_by(bin) |>
+  dplyr::summarise(meanSSB = mean(SSB),
+                   meanexplB = mean(explB),
+                   meantotB = mean(totB),
+                   nyears = dplyr::n())
+
+binsummary
+```
+
+We could characterize age structure associated with B in each bin. 
+
+```{r}
+
+Nage <- asap$N.age |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years")
+
+ageSSBbins <- SSBbins |>
+  dplyr::left_join(Nage)
+```
 
