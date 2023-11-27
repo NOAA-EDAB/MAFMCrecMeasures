@@ -1,8 +1,11 @@
 ---
-title: "Summer Flounder B and age structure"
+title: "Biomass bins and age structure"
+subtitle: "Summer flounder, scup, and black sea bass"
 author: "Sarah Gaichas"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    code_fold: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -46,14 +49,14 @@ wd <- here::here("fluke2023MTfiles")
 rdat <- paste0(asap.name,".rdat")
 asap <- dget(paste0(wd,"/",rdat)) # modified from windows specific backslash
 
-# desired objects
-asap$SSB
-
-asap$exploitable.B
-
-asap$tot.jan1.B
-
-asap$N.age
+# # desired objects
+# asap$SSB
+# 
+# asap$exploitable.B
+# 
+# asap$tot.jan1.B
+# 
+# asap$N.age
 
 
 ```
@@ -177,13 +180,13 @@ rdat <- paste0(asap.name,".rdat")
 asap <- dget(paste0(wd,"/",rdat)) # modified from windows specific backslash
 
 # desired objects
-asap$SSB
-
-asap$exploitable.B
-
-asap$tot.jan1.B
-
-asap$N.age
+# asap$SSB
+# 
+# asap$exploitable.B
+# 
+# asap$tot.jan1.B
+# 
+# asap$N.age
 
 
 ```
