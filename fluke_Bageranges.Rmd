@@ -98,7 +98,8 @@ ggplot2::ggplot(SSBdat, ggplot2::aes(x = years, y = relSSB)) +
   ggplot2::geom_hline(yintercept = 1.5) + 
   ggplot2::geom_hline(yintercept = 1) + 
   ggplot2::geom_hline(yintercept = 0.5) + 
-  ggplot2::theme_bw()
+  ggplot2::theme_bw() +
+  ggplot2::ggtitle("Fluke")
 ```
 
 Lines represent three "bins" with B > Bmsy in the top bin, 0.5 Bmsy <B < B msy in the center and B < 0.5 Bmsy at the bottom.
@@ -228,13 +229,13 @@ ggplot2::ggplot(SSBdat, ggplot2::aes(x = years, y = relSSB)) +
   ggplot2::geom_hline(yintercept = 1.5) + 
   ggplot2::geom_hline(yintercept = 1) + 
   ggplot2::geom_hline(yintercept = 0.5) + 
-  ggplot2::theme_bw()
+  ggplot2::theme_bw() +
+  ggplot2::ggtitle("Scup")
 ```
 
 Lines represent three "bins" with B > Bmsy in the top bin, 0.5 Bmsy <B < B msy in the center and B < 0.5 Bmsy at the bottom.
 
-B has never been above 1.5 Bmsy in this time series. Will have to punt on that one or use max B.
-
+B has been above 1.5 Bmsy in this time series so we can summarize age comps in all 4 bins.
 
 Summarize in each bin:
 ```{r}
@@ -254,7 +255,7 @@ binsummary <- SSBbins |>
 binsummary
 ```
 
-We could characterize age structure associated with B in each bin. 
+We now characterize age structure associated with B in each bin. 
 
 ```{r}
 
@@ -282,3 +283,240 @@ ggplot2::ggplot(ageSSBbins, ggplot2::aes(x=age, y=per_age, colour = years)) +
   
 ```
 
+### Black Sea Bass
+
+Kiersten Curti provided a link to the preliminary (pre-review but public) 2023 RT results: https://github.com/kcurti/BSB.2023.RT.Modeling/tree/main/2023.RT.Runs/Run34 
+
+We want the following from the output files: 
+
++  Population Numbers at the Start of the Year 
++  Biomass Time Series
+
+Black Sea Bass is assessed in two areas, North and South, but reference points and status apply to the entire population. I'll do my best to bin things to full population but also give North and South results if that is useful for the rec demand model.
+
+Explore the WHAM rdata file:
+
+```{r}
+# rdata file from repo
+
+ghrdat <- "https://github.com/kcurti/BSB.2023.RT.Modeling/raw/main/2023.RT.Runs/Run34/outputs/Run34.WHAM.Outputs.RDATA"
+
+download.file(ghrdat, here::here("BSB2023RTfiles/Run34.WHAM.Outputs.Rdata"))
+load("BSB2023RTfiles/Run34.WHAM.Outputs.Rdata")
+
+#objects of interest
+
+# SSB.yr.north
+# 
+# NAA.north
+# 
+# SSB.yr.south
+# 
+# NAA.south
+
+
+```
+
+Reference points from WHAM output `brps`
+
+This plot is for the whole population (north plus south)
+
+```{r}
+SSBmsynorth <- brps$est[2]
+SSBmsysouth <- brps$est[3]
+
+SSBmsy <- brps$est[4]
+
+relSSBnorth <- SSB.yr.north$est/SSBmsynorth
+relSSBsouth <- SSB.yr.south$est/SSBmsysouth
+
+relSSBtot <- (SSB.yr.north$est + SSB.yr.south$est)/SSBmsy
+
+years <- model.yrs
+
+SSBdat <- data.frame(years = years,
+                     relSSB = relSSBtot,
+                     SSB = SSB.yr.north$est + SSB.yr.south$est,
+                     SSBnorth = SSB.yr.north$est,
+                     SSBsouth = SSB.yr.south$est,
+                     relSSBnorth = relSSBnorth,
+                     relSSBsouth = relSSBsouth)
+
+ggplot2::ggplot(SSBdat, ggplot2::aes(x = years, y = relSSB)) +
+  ggplot2::geom_line() +
+  ggplot2::geom_hline(yintercept = 1.5) + 
+  ggplot2::geom_hline(yintercept = 1) + 
+  ggplot2::geom_hline(yintercept = 0.5) + 
+  ggplot2::theme_bw() +
+  ggplot2::ggtitle("BSB")
+```
+
+And here it is for each area. Both areas and the full population have been in all 4 bins.
+
+```{r}
+
+north <- ggplot2::ggplot(SSBdat, ggplot2::aes(x = years, y = relSSBnorth)) +
+  ggplot2::geom_line() +
+  ggplot2::geom_hline(yintercept = 1.5) + 
+  ggplot2::geom_hline(yintercept = 1) + 
+  ggplot2::geom_hline(yintercept = 0.5) + 
+  ggplot2::theme_bw() +
+  ggplot2::ggtitle("North BSB")
+
+south <- ggplot2::ggplot(SSBdat, ggplot2::aes(x = years, y = relSSBsouth)) +
+  ggplot2::geom_line() +
+  ggplot2::geom_hline(yintercept = 1.5) + 
+  ggplot2::geom_hline(yintercept = 1) + 
+  ggplot2::geom_hline(yintercept = 0.5) + 
+  ggplot2::theme_bw() +
+  ggplot2::ggtitle("South BSB")
+
+library(patchwork)
+
+north + south
+
+```
+
+Summarize in each bin (full population):
+```{r}
+SSBbins <- SSBdat |>
+  dplyr::mutate(bin = dplyr::case_when(relSSB > 1.5 ~ "high above target",
+                                dplyr::between(relSSB, 1.0,1.5) ~ "above target",
+                                dplyr::between(relSSB, 0.5,1.0) ~ "below target",
+                                relSSB < 0.5 ~ "overfished"))
+
+binsummary <- SSBbins |> 
+  dplyr::group_by(bin) |>
+  dplyr::summarise(meanSSB = mean(SSB),
+                   nyears = dplyr::n()
+                   )
+
+binsummary
+
+binsummaryNorth <- SSBdat |>
+  dplyr::mutate(bin = dplyr::case_when(relSSBnorth > 1.5 ~ "high above target",
+                                dplyr::between(relSSBnorth, 1.0,1.5) ~ "above target",
+                                dplyr::between(relSSBnorth, 0.5,1.0) ~ "below target",
+                                relSSBnorth < 0.5 ~ "overfished")) |>
+   dplyr::group_by(bin) |>
+   dplyr::summarise(meanSSBnorth = mean(SSBnorth),
+                   nyears = dplyr::n()
+                   )
+ 
+
+binsummarySouth <- SSBdat |>
+  dplyr::mutate(bin = dplyr::case_when(relSSBsouth > 1.5 ~ "high above target",
+                                dplyr::between(relSSBsouth, 1.0,1.5) ~ "above target",
+                                dplyr::between(relSSBsouth, 0.5,1.0) ~ "below target",
+                                relSSBsouth < 0.5 ~ "overfished")) |>
+   dplyr::group_by(bin) |>
+   dplyr::summarise(meanSSBsouth = mean(SSBsouth),
+                   nyears = dplyr::n()
+                   )
+
+```
+
+Summary for north:
+```{r}
+binsummaryNorth
+```
+
+Summary for south:
+```{r}
+binsummarySouth
+```
+
+Age structure, full population: 
+```{r}
+
+NAAtot <- NAA.north + NAA.south
+
+Nage <- NAAtot |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  dplyr::rename_with(~ paste0("age", .), -years)
+
+ageSSBbins <- SSBbins |>
+  dplyr::left_join(Nage) |>
+  dplyr::mutate(total = rowSums(dplyr::across(starts_with("age"))), 
+     dplyr::across(starts_with("age"), ~ ./total * 100, .names = 'per_{.col}')) |>
+  dplyr::select(years, relSSB, bin, starts_with("per_age")) |>
+  tidyr::pivot_longer(starts_with("per_age"), values_to = "per_age", names_to = "age") |>
+  tidyr::separate(age, into = c("A", "age"), sep = "per_age") 
+
+ggplot2::ggplot(ageSSBbins, ggplot2::aes(x=age, y=per_age, colour = years)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_wrap(~bin) +
+  ggplot2::theme_bw() +
+  ggplot2::ylab("Percent at age")
+                  
+
+  
+```
+
+Age structure, North: 
+```{r}
+
+SSBbinsN <- SSBdat |>
+  dplyr::mutate(bin = dplyr::case_when(relSSBnorth > 1.5 ~ "high above target",
+                                dplyr::between(relSSBnorth, 1.0,1.5) ~ "above target",
+                                dplyr::between(relSSBnorth, 0.5,1.0) ~ "below target",
+                                relSSBnorth < 0.5 ~ "overfished"))
+
+Nage <- NAA.north |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  dplyr::rename_with(~ paste0("age", .), -years)
+
+ageSSBbins <- SSBbinsN |>
+  dplyr::left_join(Nage) |>
+  dplyr::mutate(total = rowSums(dplyr::across(starts_with("age"))), 
+     dplyr::across(starts_with("age"), ~ ./total * 100, .names = 'per_{.col}')) |>
+  dplyr::select(years, relSSBnorth, bin, starts_with("per_age")) |>
+  tidyr::pivot_longer(starts_with("per_age"), values_to = "per_age", names_to = "age") |>
+  tidyr::separate(age, into = c("A", "age"), sep = "per_age") 
+
+ggplot2::ggplot(ageSSBbins, ggplot2::aes(x=age, y=per_age, colour = years)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_wrap(~bin) +
+  ggplot2::theme_bw() +
+  ggplot2::ylab("Percent at age")
+                  
+
+  
+```
+
+Age structure, South:
+
+```{r}
+SSBbinsS <- SSBdat |>
+  dplyr::mutate(bin = dplyr::case_when(relSSBsouth > 1.5 ~ "high above target",
+                                dplyr::between(relSSBsouth, 1.0,1.5) ~ "above target",
+                                dplyr::between(relSSBsouth, 0.5,1.0) ~ "below target",
+                                relSSBsouth < 0.5 ~ "overfished"))
+
+Nage <- NAA.south |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  dplyr::rename_with(~ paste0("age", .), -years)
+
+ageSSBbins <- SSBbinsS |>
+  dplyr::left_join(Nage) |>
+  dplyr::mutate(total = rowSums(dplyr::across(starts_with("age"))), 
+     dplyr::across(starts_with("age"), ~ ./total * 100, .names = 'per_{.col}')) |>
+  dplyr::select(years, relSSBsouth, bin, starts_with("per_age")) |>
+  tidyr::pivot_longer(starts_with("per_age"), values_to = "per_age", names_to = "age") |>
+  tidyr::separate(age, into = c("A", "age"), sep = "per_age") 
+
+ggplot2::ggplot(ageSSBbins, ggplot2::aes(x=age, y=per_age, colour = years)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_wrap(~bin) +
+  ggplot2::theme_bw() +
+  ggplot2::ylab("Percent at age")
+                  
+
+  
+```
