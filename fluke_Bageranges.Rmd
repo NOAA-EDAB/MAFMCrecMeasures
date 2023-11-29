@@ -608,9 +608,13 @@ Work in progress... this isnt done
 
 ```{r}
 
-WAAssb <- WHAM_output.ests$log_SSB
+indat <- "https://github.com/kcurti/BSB.2023.RT.Modeling/raw/main/2023.RT.Runs/Run34/res_tables/fit_input.RDS"
 
+download.file(indat, here::here("BSB2023RTfiles/fit_input.rds"))
+bsbinput <- readRDS("BSB2023RTfiles/fit_input.rds")
 
+SSBwaaN <- bsbinput$data$waa[1,,]
 
+SSBwaaS <- bsbinput$data$waa[2,,]
 
 ```
