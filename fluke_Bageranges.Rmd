@@ -40,7 +40,7 @@ This is findable in the .rdat file using Chris Legault and Liz Brook's ASAPplots
 
 #devtools::install_github("cmlegault/ASAPplots", build_vignettes = TRUE)
 
-library(ASAPplots)
+#library(ASAPplots)
 
 asap.name <- "F2023_NEWSET_ESS_V1"    
 wd <- here::here("fluke2023MTfiles")
@@ -153,6 +153,47 @@ ggplot2::ggplot(ageSSBbins, ggplot2::aes(x=age, y=per_age, colour = years)) +
   
 ```
 
+Can we convert these to length frequencies? Use the weight at age matrix for SSB and convert with a length-weight relationship from StockEFF (survey for all species).
+No StockEFF for summer flounder, use Mark's values for summer flounder MSE:
+
+Wkg = a*Lcm^b		a=	0.00000355809		b = 	3.278
+
+
+```{r}
+
+WAAssb <- asap$WAA.mats$WAA.ssb |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  tidyr::pivot_longer(-years, names_to = "Age", values_to = "WtAgekg")
+
+Nagelong <- asap$N.age |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  tidyr::pivot_longer(-years, names_to = "Age", values_to = "NAge")
+
+lenwt_a <- 0.00000355809
+lenwt_b <- 3.278
+
+LAAssb <- WAAssb |>
+  dplyr::mutate(XLcm = exp((log(WtAgekg)-log(lenwt_a))/lenwt_b)) |>
+  dplyr::left_join(Nagelong) |>
+  dplyr::group_by(years) |>
+  dplyr::mutate(TotN = sum(NAge, na.rm = TRUE),
+                percN = NAge/TotN) |>
+  dplyr::left_join(SSBbins)
+
+ggplot2::ggplot(LAAssb, ggplot2::aes(x=XLcm, y=percN, colour = years)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_wrap(~bin) +
+  ggplot2::theme_bw() +
+  ggplot2::ylab("Percent at mean length")
+
+
+```
+
+
 ### Scup
 
 Mark Terciero provided the files from the 2023 MT assessment. They are in this repo in the `scup2023MTfiles` folder: https://github.com/sgaichas/MAFMCrecMeasures/tree/main/scup2023MTfiles
@@ -171,7 +212,7 @@ This is findable in the .rdat file using Chris Legault and Liz Brook's ASAPplots
 
 #devtools::install_github("cmlegault/ASAPplots", build_vignettes = TRUE)
 
-library(ASAPplots)
+#library(ASAPplots)
 
 asap.name <- "MTA2023_NEWSET_ESS_V1"    
 wd <- here::here("scup2023MTfiles")
@@ -281,6 +322,44 @@ ggplot2::ggplot(ageSSBbins, ggplot2::aes(x=age, y=per_age, colour = years)) +
                   
 
   
+```
+
+Can we convert these to length frequencies? Use the weight at age matrix for SSB and convert with a length-weight relationship from StockEFF (survey for all species)
+No length-weight in StockEFF for Scup. Using Wigley et al 2003 TM NE-171 https://repository.library.noaa.gov/view/noaa/3346/noaa_3346_DS1.pdf? for now, can sub in survey later
+
+ln a -11.0698 b 3.1365
+
+```{r}
+
+WAAssb <- asap$WAA.mats$WAA.ssb |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  tidyr::pivot_longer(-years, names_to = "Age", values_to = "WtAgekg")
+
+Nagelong <- asap$N.age |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  tidyr::pivot_longer(-years, names_to = "Age", values_to = "NAge")
+
+lenwt_a <- exp(-11.0698)
+lenwt_b <- 3.1365
+
+LAAssb <- WAAssb |>
+  dplyr::mutate(XLcm = exp((log(WtAgekg)-log(lenwt_a))/lenwt_b)) |>
+  dplyr::left_join(Nagelong) |>
+  dplyr::group_by(years) |>
+  dplyr::mutate(TotN = sum(NAge, na.rm = TRUE),
+                percN = NAge/TotN) |>
+  dplyr::left_join(SSBbins)
+
+ggplot2::ggplot(LAAssb, ggplot2::aes(x=XLcm, y=percN, colour = years)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_wrap(~bin) +
+  ggplot2::theme_bw() +
+  ggplot2::ylab("Percent at mean length")
+
 ```
 
 ### Black Sea Bass
@@ -519,4 +598,19 @@ ggplot2::ggplot(ageSSBbins, ggplot2::aes(x=age, y=per_age, colour = years)) +
                   
 
   
+```
+
+Can we convert these to length frequencies? Use the weight at age matrix for SSB and convert with a length-weight relationship from StockEFF (survey for all species)
+
+WHAM doesn't have SSBwaa so I need to dig it out. I do however have length-weight parameters for North and South
+
+Work in progress... this isnt done
+
+```{r}
+
+WAAssb <- WHAM_output.ests$log_SSB
+
+
+
+
 ```
