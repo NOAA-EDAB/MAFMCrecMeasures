@@ -24,7 +24,7 @@ Take the 2023 MT assessment input and output files as a starting point. Find max
 
 ### Summer flounder
 
-Mark Terciero provided the files from the 2023 MT assessment. They are in this repo in the `fluke2023MTfiles` folder: https://github.com/sgaichas/MAFMCrecMeasures/tree/main/fluke2023MTfiles
+Mark Terciero provided the files from the 2023 MT assessment. They are in this repo in the `fluke2023MTfiles` folder: https://github.com/NOAA-EDAB/MAFMCrecMeasures/tree/main/fluke2023MTfiles
 
 First, here in mac land we need to change filenames to have lowercase extensions. Done by hand.
 
@@ -196,7 +196,7 @@ ggplot2::ggplot(LAAssb, ggplot2::aes(x=XLcm, y=percN, colour = years)) +
 
 ### Scup
 
-Mark Terciero provided the files from the 2023 MT assessment. They are in this repo in the `scup2023MTfiles` folder: https://github.com/sgaichas/MAFMCrecMeasures/tree/main/scup2023MTfiles
+Mark Terciero provided the files from the 2023 MT assessment. They are in this repo in the `scup2023MTfiles` folder: https://github.com/NOAA-EDAB/MAFMCrecMeasures/tree/main/scup2023MTfiles
 
 First, here in mac land we need to change filenames to have lowercase extensions. Done by hand.
 
@@ -365,6 +365,8 @@ ggplot2::ggplot(LAAssb, ggplot2::aes(x=XLcm, y=percN, colour = years)) +
 ### Black Sea Bass
 
 Kiersten Curti provided a link to the preliminary (pre-review but public) 2023 RT results: https://github.com/kcurti/BSB.2023.RT.Modeling/tree/main/2023.RT.Runs/Run34 
+
+Key outputs stored in https://github.com/NOAA-EDAB/MAFMCrecMeasures/tree/main/BSB2023RTfiles
 
 We want the following from the output files: 
 
@@ -604,7 +606,15 @@ Can we convert these to length frequencies? Use the weight at age matrix for SSB
 
 WHAM doesn't have SSBwaa so I need to dig it out. I do however have length-weight parameters for North and South
 
-Work in progress... this isnt done
+The below assumes that the first WAA matrix in input is SSBnorth and the second is SSBsouth. Check with Kiersten!
+ 
+Length weight parameters from stockeff files are
+
+North
+a = .000011062, b = 3.05,
+
+South
+a = .0000114, b = 3.046
 
 ```{r}
 
@@ -614,7 +624,73 @@ download.file(indat, here::here("BSB2023RTfiles/fit_input.rds"))
 bsbinput <- readRDS("BSB2023RTfiles/fit_input.rds")
 
 SSBwaaN <- bsbinput$data$waa[1,,]
+colnames(SSBwaaN) <- ages.labels
 
-SSBwaaS <- bsbinput$data$waa[2,,]
+SSBwaaN <- SSBwaaN |>
+  as.data.frame() |>
+  dplyr::mutate(years = model.yrs) |>
+  tidyr::pivot_longer(-years, names_to = "Age", values_to = "WtAgekg")
+
+NagelongN <- NAA.north |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  tidyr::pivot_longer(-years, names_to = "Age", values_to = "NAge")
+
+#from north stockeff
+lenwt_a <- .000011062
+lenwt_b <- 3.05
+
+LAAssb <- SSBwaaN |>
+  dplyr::mutate(XLcm = exp((log(WtAgekg)-log(lenwt_a))/lenwt_b)) |>
+  dplyr::left_join(NagelongN) |>
+  dplyr::group_by(years) |>
+  dplyr::mutate(TotN = sum(NAge, na.rm = TRUE),
+                percN = NAge/TotN) |>
+  dplyr::left_join(SSBbinsN)
+
+ggplot2::ggplot(LAAssb, ggplot2::aes(x=XLcm, y=percN, colour = years)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_wrap(~bin) +
+  ggplot2::theme_bw() +
+  ggplot2::ylab("Percent at mean length") +
+  ggplot2::ggtitle("North")
 
 ```
+
+```{r}
+SSBwaaS <- bsbinput$data$waa[2,,]
+colnames(SSBwaaS) <- ages.labels
+
+SSBwaaS <- SSBwaaS |>
+  as.data.frame() |>
+  dplyr::mutate(years = model.yrs) |>
+  tidyr::pivot_longer(-years, names_to = "Age", values_to = "WtAgekg")
+
+NagelongS <- NAA.south |>
+  as.data.frame() |>
+  tibble::rownames_to_column(var = "years") |>
+  dplyr::mutate(years = as.integer(years)) |>
+  tidyr::pivot_longer(-years, names_to = "Age", values_to = "NAge")
+
+#from north stockeff
+lenwt_a <- .000011062
+lenwt_b <- 3.05
+
+LAAssb <- SSBwaaS |>
+  dplyr::mutate(XLcm = exp((log(WtAgekg)-log(lenwt_a))/lenwt_b)) |>
+  dplyr::left_join(NagelongS) |>
+  dplyr::group_by(years) |>
+  dplyr::mutate(TotN = sum(NAge, na.rm = TRUE),
+                percN = NAge/TotN) |>
+  dplyr::left_join(SSBbinsS)
+
+ggplot2::ggplot(LAAssb, ggplot2::aes(x=XLcm, y=percN, colour = years)) +
+  ggplot2::geom_point() +
+  ggplot2::facet_wrap(~bin) +
+  ggplot2::theme_bw() +
+  ggplot2::ylab("Percent at mean length") +
+  ggplot2::ggtitle("South")
+
+```
+
